@@ -48,6 +48,9 @@ importers:
       eslint-config-prettier:
         specifier: 9.1.0
         version: 9.1.0(eslint@9.9.0(jiti@1.21.6))
+      eslint-plugin-import:
+        specifier: ^2.29.1
+        version: 2.29.1(@typescript-eslint/parser@8.1.0(eslint@9.9.0(jiti@1.21.6))(typescript@5.5.4))(eslint@9.9.0(jiti@1.21.6))
       eslint-plugin-lit:
         specifier: 1.14.0
         version: 1.14.0(eslint@9.9.0(jiti@1.21.6))

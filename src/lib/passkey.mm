@@ -1,21 +1,20 @@
 #import "passkey.h"
-// #import "passkey_objc.h"
 #import <Foundation/Foundation.h>
 #import <dispatch/dispatch.h>
 #import <AuthenticationServices/AuthenticationServices.h>
 
-#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500
+typedef void (^PasskeyCompletionHandler)(NSString *resultMessage, NSString *errorMessage);
+
+NSData* ConvertBufferToNSData(Napi::Buffer<uint8_t> buffer) {
+    return [NSData dataWithBytes:buffer.Data() length:buffer.Length()];
+}
+
 @interface PasskeyHandlerObjC : NSObject <ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding>
-#else
-@interface PasskeyHandlerObjC : NSObject
-#endif
 
-@property (nonatomic, strong) NSString *resultMessage;
-@property (nonatomic, assign) dispatch_semaphore_t semaphore;
+@property (nonatomic, strong) PasskeyCompletionHandler completionHandler;
 
-- (void)PerformCreateRequest:(NSDictionary *)options;
-- (void)PerformGetRequest:(NSDictionary *)options;
-- (NSString *)GetResultMessage;
+- (void)PerformCreateRequest:(NSDictionary *)options withCompletionHandler:(PasskeyCompletionHandler)completionHandler;
+- (void)PerformGetRequest:(NSDictionary *)options withCompletionHandler:(PasskeyCompletionHandler)completionHandler;
 
 @end
 
@@ -23,20 +22,22 @@
 
 - (instancetype)init {
     self = [super init];
-    if (self) {
-        _semaphore = dispatch_semaphore_create(0);
-        _resultMessage = nil;
-    }
     return self;
 }
 
-- (void)PerformCreateRequest:(NSDictionary *)options {
+- (void)PerformCreateRequest:(NSDictionary *)options withCompletionHandler:(PasskeyCompletionHandler)completionHandler {
+    self.completionHandler = completionHandler;
+
     if (@available(macOS 12.0, *)) {
         NSDictionary *publicKeyOptions = options[@"publicKey"];
         NSString *rpId = publicKeyOptions[@"rp"][@"id"];
         NSString *userName = publicKeyOptions[@"user"][@"name"];
-        NSData *userId = publicKeyOptions[@"user"][@"id"];
-        NSData *challenge = publicKeyOptions[@"challenge"];
+        
+        NSString *challengeString = publicKeyOptions[@"challenge"];
+        NSData *challenge = [[NSData alloc] initWithBase64EncodedString:challengeString options:0];
+
+        NSString *userIdString = publicKeyOptions[@"user"][@"id"];
+        NSData *userId = [[NSData alloc] initWithBase64EncodedString:userIdString options:0];
 
         ASAuthorizationPlatformPublicKeyCredentialProvider *provider =
             [[ASAuthorizationPlatformPublicKeyCredentialProvider alloc] initWithRelyingPartyIdentifier:rpId];
@@ -69,13 +70,20 @@
         controller.delegate = self;
         controller.presentationContextProvider = self;
 
+        NSLog(@"[PerformCreateRequest]: Delegate and PresentationContextProvider set. Starting requests...");
+
         [controller performRequests];
     } else {
-        NSLog(@"Your macOS version does not support WebAuthn APIs.");
+        NSLog(@"[PerformCreateRequest]: Your macOS version does not support WebAuthn APIs.");
+        if (completionHandler) {
+            completionHandler(nil, @"macOS version not supported");
+        }
     }
 }
 
-- (void)PerformGetRequest:(NSDictionary *)options {
+- (void)PerformGetRequest:(NSDictionary *)options withCompletionHandler:(PasskeyCompletionHandler)completionHandler {
+    self.completionHandler = completionHandler;
+
     if (@available(macOS 12.0, *)) {
         NSDictionary *publicKeyOptions = options[@"publicKey"];
         NSString *rpId = publicKeyOptions[@"rpId"];
@@ -114,41 +122,99 @@
         controller.delegate = self;
         controller.presentationContextProvider = self;
 
+        NSLog(@"[PerformGetRequest]: Delegate and PresentationContextProvider set. Starting requests...");
+
         [controller performRequests];
     } else {
-        NSLog(@"Your macOS version does not support WebAuthn APIs.");
+        NSLog(@"[PerformGetRequest]: Your macOS version does not support WebAuthn APIs.");
+        if (completionHandler) {
+            completionHandler(nil, @"macOS version not supported");
+        }
     }
 }
 
-- (NSString *)GetResultMessage {
-    return self.resultMessage;
-}
-
-#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500
 - (void)authorizationController:(ASAuthorizationController *)controller didCompleteWithAuthorization:(ASAuthorization *)authorization {
-    self.resultMessage = @"Success";
-    dispatch_semaphore_signal(self.semaphore);
+    NSLog(@"[authorizationController didCompleteWithAuthorization]: Success");
+    
+    if ([authorization.credential isKindOfClass:[ASAuthorizationPlatformPublicKeyCredentialRegistration class]]) {
+        ASAuthorizationPlatformPublicKeyCredentialRegistration *credential = (ASAuthorizationPlatformPublicKeyCredentialRegistration *)authorization.credential;
+        
+        NSData *clientDataJSON = credential.rawClientDataJSON;
+        NSData *attestationObject = credential.rawAttestationObject;
+        NSString *credentialId = [credential.credentialID base64EncodedStringWithOptions:0];
+        
+        NSDictionary *responseDict = @{
+            @"clientDataJSON": [clientDataJSON base64EncodedStringWithOptions:0],
+            @"attestationObject": [attestationObject base64EncodedStringWithOptions:0],
+            @"credentialId": credentialId
+        };
+        
+        NSError *error;
+        NSData *responseData = [NSJSONSerialization dataWithJSONObject:responseDict options:0 error:&error];
+        if (error) {
+            NSLog(@"[authorizationController didCompleteWithAuthorization]: Failed to serialize response: %@", error.localizedDescription);
+            if (self.completionHandler) {
+                self.completionHandler(nil, error.localizedDescription);
+            }
+        } else {
+            NSString *resultMessage = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
+            if (self.completionHandler) {
+                self.completionHandler(resultMessage, nil);
+            }
+        }
+    } else {
+        NSLog(@"[authorizationController didCompleteWithAuthorization]: Unsupported credential type");
+        if (self.completionHandler) {
+            self.completionHandler(nil, @"Unsupported credential type");
+        }
+    }
 }
 
 - (void)authorizationController:(ASAuthorizationController *)controller didCompleteWithError:(NSError *)error {
-    self.resultMessage = [NSString stringWithFormat:@"Error: %@", error.localizedDescription];
-    dispatch_semaphore_signal(self.semaphore);
+    NSLog(@"[authorizationController didCompleteWithError]: Error: %@", error.localizedDescription);
+
+    if (self.completionHandler) {
+        self.completionHandler(nil, error.localizedDescription);
+    }
 }
 
 - (ASPresentationAnchor)presentationAnchorForAuthorizationController:(ASAuthorizationController *)controller {
-    return [NSApplication sharedApplication].windows.firstObject;
+    NSWindow *mainWindow = [NSApplication sharedApplication].keyWindow;
+    if (!mainWindow) {
+        mainWindow = [NSApplication sharedApplication].windows.firstObject;
+    }
+    
+    if (mainWindow) {
+        NSLog(@"[presentationAnchorForAuthorizationController]: Returning main window as presentation anchor.");
+        return mainWindow;
+    } else {
+        NSLog(@"[presentationAnchorForAuthorizationController]: Error: No valid presentation anchor available.");
+        return nil;
+    }
 }
-#endif
 
 @end
 
 NSDictionary* ConvertStringToNSDictionary(const std::string& str) {
-    NSData* jsonData = [NSData dataWithBytes:str.c_str() length:str.size()];
-    NSError* error;
-    NSDictionary* dict = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&error];
-    if (error) {
-        NSLog(@"Failed to convert string to NSDictionary: %@", error.localizedDescription);
+    if (str.empty()) {
+        NSLog(@"[ConvertStringToNSDictionary]: Empty string provided to ConvertStringToNSDictionary");
+        return nil;
     }
+
+    NSData* jsonData = [NSData dataWithBytes:str.c_str() length:str.size()];
+    if (!jsonData) {
+        NSLog(@"[ConvertStringToNSDictionary]: Failed to convert string to NSData");
+        return nil;
+    }
+
+    NSError* error = nil;
+    NSDictionary* dict = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&error];
+    
+    if (error) {
+        NSLog(@"[ConvertStringToNSDictionary]: Failed to convert NSData to NSDictionary: %@", error.localizedDescription);
+        return nil;
+    }
+
     return dict;
 }
 
@@ -163,17 +229,59 @@ public:
     }
 
     Napi::Value HandlePasskeyCreate(Napi::Env env, const std::string& options) {
+        if (options.empty()) {
+            Napi::TypeError::New(env, "[HandlePasskeyCreate]: Options string is empty").ThrowAsJavaScriptException();
+            return env.Null();
+        }
+
         NSDictionary* optionsDict = ConvertStringToNSDictionary(options);
-        [handlerObjC PerformCreateRequest:optionsDict];
-        NSString *resultMessage = [handlerObjC GetResultMessage];
-        return Napi::String::New(env, std::string([resultMessage UTF8String]));
+        if (optionsDict == nil) {
+            Napi::TypeError::New(env, "[HandlePasskeyCreate]: Failed to convert options to NSDictionary").ThrowAsJavaScriptException();
+            return env.Null();
+        }
+
+        auto deferred = Napi::Promise::Deferred::New(env);
+
+        [handlerObjC PerformCreateRequest:optionsDict withCompletionHandler:^(NSString *resultMessage, NSString *errorMessage) {
+            Napi::HandleScope scope(env);
+
+            if (errorMessage != nil) {
+                deferred.Reject(Napi::TypeError::New(env, std::string([errorMessage UTF8String])).Value());
+            } else if (resultMessage == nil) {
+                deferred.Reject(Napi::TypeError::New(env, "[HandlePasskeyCreate]: Result message is nil").Value());
+            } else {
+                deferred.Resolve(Napi::String::New(env, std::string([resultMessage UTF8String])));
+            }
+        }];
+
+        return deferred.Promise();
     }
 
     Napi::Value HandlePasskeyGet(Napi::Env env, const std::string& options) {
+        if (options.empty()) {
+            Napi::TypeError::New(env, "[HandlePasskeyGet]: Options string is empty").ThrowAsJavaScriptException();
+            return env.Null();
+        }
+
         NSDictionary* optionsDict = ConvertStringToNSDictionary(options);
-        [handlerObjC PerformGetRequest:optionsDict];
-        NSString *resultMessage = [handlerObjC GetResultMessage];
-        return Napi::String::New(env, std::string([resultMessage UTF8String]));
+        if (optionsDict == nil) {
+            Napi::TypeError::New(env, "[HandlePasskeyGet]: Failed to convert options to NSDictionary").ThrowAsJavaScriptException();
+            return env.Null();
+        }
+
+        auto deferred = Napi::Promise::Deferred::New(env);
+
+        [handlerObjC PerformGetRequest:optionsDict withCompletionHandler:^(NSString *resultMessage, NSString *errorMessage) {
+            Napi::HandleScope scope(env);
+
+            if (errorMessage != nil) {
+                deferred.Reject(Napi::TypeError::New(env, std::string([errorMessage UTF8String])).Value());
+            } else if (resultMessage == nil) {
+                deferred.Reject(Napi::TypeError::New(env, "[HandlePasskeyGet]: Result message is nil").Value());
+            } else {
+                deferred.Resolve(Napi::String::New(env, std::string([resultMessage UTF8String])));
+            }
+        }];
     }
 
 private:
@@ -185,7 +293,7 @@ PasskeyHandler::PasskeyHandler(const Napi::CallbackInfo& info)
     // Constructor
 }
 
-PasskeyHandler::~PasskeyHandler() = default;  // Destructor is defaulted
+PasskeyHandler::~PasskeyHandler() = default;
 
 Napi::Value PasskeyHandler::HandlePasskeyCreate(const Napi::CallbackInfo& info) {
     std::string options = info[0].As<Napi::String>();
@@ -199,8 +307,8 @@ Napi::Value PasskeyHandler::HandlePasskeyGet(const Napi::CallbackInfo& info) {
 
 Napi::Object PasskeyHandler::Init(Napi::Env env, Napi::Object exports) {
     Napi::Function func = DefineClass(env, "PasskeyHandler", {
-        InstanceMethod("handlePasskeyCreate", &PasskeyHandler::HandlePasskeyCreate),
-        InstanceMethod("handlePasskeyGet", &PasskeyHandler::HandlePasskeyGet),
+        InstanceMethod("HandlePasskeyCreate", &PasskeyHandler::HandlePasskeyCreate),
+        InstanceMethod("HandlePasskeyGet", &PasskeyHandler::HandlePasskeyGet),
     });
 
     exports.Set("PasskeyHandler", func);

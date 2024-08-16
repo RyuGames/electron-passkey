@@ -1,14 +1,14 @@
 import { join } from 'path';
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow } from 'electron';
+// eslint-disable-next-line
 import Passkey from '..';
+// eslint-disable-next-line
+import './ipcHandlers';
 
 // https://github.com/electron/electron/issues/25153
 // app.disableHardwareAcceleration();
 
 let window: BrowserWindow;
-
-const toggleMouseKey = 'CmdOrCtrl + J';
-const toggleShowKey = 'CmdOrCtrl + K';
 
 function createWindow() {
   window = new BrowserWindow({
@@ -21,26 +21,15 @@ function createWindow() {
     },
   });
 
-  window.loadURL('https://thirdweb.com/login?next=%2Fdashboard%2Fconnect%2Fin-app-wallets');
+  window.loadURL(
+    'https://thirdweb.com/login?next=%2Fdashboard%2Fconnect%2Fin-app-wallets',
+  );
 
   window.webContents.openDevTools();
+
+  console.log(Passkey.getPackageName());
 }
 
-ipcMain.on('webauth-create', async (event, options) => {
-  console.log(`Received webauth-create: ${JSON.stringify(options)}`);
-  const result = await Passkey.handlePasskeyCreate(options);
-  event.reply(result);
-});
-
-ipcMain.on('webauth-get', async (event, options) => {
-  console.log(`Received webauth-get: ${JSON.stringify(options)}`);
-  const result = await Passkey.handlePasskeyGet(options);
-  event.reply(result);
-});
-
 app.on('ready', () => {
-  setTimeout(
-    createWindow,
-    process.platform === 'linux' ? 1000 : 0 // https://github.com/electron/electron/issues/16809
-  );
+  setTimeout(createWindow, 500);
 });

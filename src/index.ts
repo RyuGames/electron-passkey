@@ -6,11 +6,11 @@ export interface PublicKeyCredentialCreationOptions {
     name: string;
   };
   user: {
-    id: Buffer;
+    id: ArrayBuffer | string;
     name: string;
     displayName: string;
   };
-  challenge: Buffer;
+  challenge: ArrayBuffer | string;
   pubKeyCredParams: Array<{
     type: string;
     alg: number;
@@ -50,21 +50,60 @@ export interface PasskeyOptions {
 }
 
 interface PasskeyInterface {
-  handlePasskeyCreate: (options: string) => Promise<string>;
-  handlePasskeyGet: (options: string) => Promise<string>;
+  HandlePasskeyCreate: (options: string) => Promise<string>;
+  HandlePasskeyGet: (options: string) => Promise<string>;
+  PasskeyHandler: any;
 }
 
 const lib: PasskeyInterface = require('node-gyp-build')(join(__dirname, '..'));
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 class Passkey {
-  static async handlePasskeyCreate(options: PasskeyOptions): Promise<string> {
-    const result = await lib.handlePasskeyCreate(JSON.stringify(options));
-    return result;
+  // eslint-disable-next-line
+  private static instance: Passkey;
+
+  private handler: any;
+
+  private constructor() {
+    this.handler = new lib.PasskeyHandler(); // Create an instance of PasskeyHandler
   }
 
-  static async handlePasskeyGet(options: PasskeyOptions): Promise<string> {
-    const result = await lib.handlePasskeyGet(JSON.stringify(options));
-    return result;
+  // Singleton pattern: ensures only one instance is created
+  static getInstance(): Passkey {
+    if (!Passkey.instance) {
+      Passkey.instance = new Passkey();
+    }
+    return Passkey.instance;
+  }
+
+  handlePasskeyCreate(options: PasskeyOptions): Promise<string> {
+    options.publicKey.challenge = arrayBufferToBase64(
+      options.publicKey.challenge as ArrayBuffer,
+    );
+    (options.publicKey as PublicKeyCredentialCreationOptions).user.id =
+      arrayBufferToBase64(
+        (options.publicKey as PublicKeyCredentialCreationOptions).user
+          .id as ArrayBuffer,
+      );
+
+    return this.handler.HandlePasskeyCreate(JSON.stringify(options));
+  }
+
+  handlePasskeyGet(options: PasskeyOptions): Promise<string> {
+    return this.handler.HandlePasskeyGet(JSON.stringify(options));
+  }
+
+  static getPackageName(): string {
+    return 'electron-passkey';
   }
 }
 

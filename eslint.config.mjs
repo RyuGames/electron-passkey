@@ -2,6 +2,7 @@ import promise from "eslint-plugin-promise";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import js from "@eslint/js";
+import importPlugin from 'eslint-plugin-import';
 import { FlatCompat } from "@eslint/eslintrc";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,9 +24,13 @@ export default [{
     files: ['**/*.js', '**/*.ts', '**/*.mjs'],
     plugins: {
         promise,
+        importPlugin,
     },
 
     languageOptions: {
+        globals: {
+            navigator: 'readonly',
+        },
         ecmaVersion: 2020,
         sourceType: "module",
 
@@ -37,6 +42,8 @@ export default [{
     },
 
     rules: {
+        "import/no-named-as-default": "off",
+        "import/no-named-as-default-member": "off",
         "@typescript-eslint/no-require-imports": "off",
         "import/newline-after-import": "off",
         "import/no-amd": "off",
