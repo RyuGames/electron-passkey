@@ -2,12 +2,13 @@
 
 @interface PasskeyHandlerObjC : NSObject <ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding>
 @property (nonatomic, strong) NSString *resultMessage;
-@property (nonatomic, strong) dispatch_semaphore_t semaphore;
+@property (nonatomic, assign) dispatch_semaphore_t semaphore;
 
 - (void)performCreateRequestWithOptions:(NSDictionary *)options;
 - (void)performGetRequestWithOptions:(NSDictionary *)options;
 @end
 
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500
 @implementation PasskeyHandlerObjC
 
 - (instancetype)init {
@@ -124,6 +125,7 @@
 }
 
 @end
+#endif
 
 PasskeyHandler::PasskeyHandler(const Napi::CallbackInfo& info) 
     : Napi::ObjectWrap<PasskeyHandler>(info) {

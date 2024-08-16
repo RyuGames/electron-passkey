@@ -7,7 +7,10 @@
       ],
       "include_dirs": [
         "src/lib",
-        "node_modules/.pnpm/node-addon-api@8.1.0/node_modules/node-addon-api"
+        "<!(node -p \"require('node-addon-api').targets\"):node_addon_api",
+      ],
+      "dependencies": [
+        "<!(node -p \"require('node-addon-api').targets\"):node_addon_api",
       ],
       "link_settings": {
         "libraries": [
@@ -17,6 +20,7 @@
         ]
       },
       "xcode_settings": {
+        "GCC_SYMBOLS_PRIVATE_EXTERN": "YES",
         "OTHER_CFLAGS": [
           "-fobjc-arc",
           "-fexceptions"
@@ -29,6 +33,7 @@
         "-pthread",
         "-fexceptions"
       ],
+      "cflags+": ["-fvisibility=hidden"],
       "cflags_cc": [
         "-std=c++11",
         "-fexceptions"
