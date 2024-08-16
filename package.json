@@ -1,6 +1,6 @@
 {
     "name": "electron-passkey",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "description": "A native module to handle WebAuthn passkey operations",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
