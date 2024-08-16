@@ -9,7 +9,9 @@
         "prebuild": "prebuildify --napi",
         "build": "pnpm prebuild && pnpm tsc",
         "lint": "eslint",
-        "lint:fix": "eslint --fix"
+        "lint:fix": "eslint --fix",
+        "package:changeset": "changeset",
+        "package:version": "changeset version"
     },
     "files": [
         "dist/index.d.ts",
@@ -20,6 +22,7 @@
         "prebuilds"
     ],
     "devDependencies": {
+        "@changesets/cli": "^2.27.7",
         "@eslint/eslintrc": "^3.1.0",
         "@types/node": "^22.3.0",
         "@typescript-eslint/eslint-plugin": "8.1.0",
