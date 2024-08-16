@@ -17,7 +17,7 @@ jobs:
         with:
           node-version: 20
           cache: 'pnpm'
-      - run: pnpm --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - run: pnpm prebuild --arch x64
       - run: pnpm prebuild --arch arm64
       - uses: actions/upload-artifact@v3
@@ -42,7 +42,7 @@ jobs:
         with:
           node-version: 20
           cache: 'pnpm'
-      - run: pnpm --frozen-lockfile --ignore-scripts
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm tsc
       - name: Rename .gitignore for prebuild
         run: |
