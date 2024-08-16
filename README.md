@@ -8,12 +8,12 @@ Native module for electron applications to use passkey funcitonality
 ```js
 import { ipcRenderer } from 'electron';
 
-navigator.credentials.create = async function (options) {
-  return ipcRenderer.invoke('webauth-create', options);
+navigator.credentials.create = function (options) {
+  return ipcRenderer.invoke('webauthn-create', options);
 };
 
-navigator.credentials.get = async function (options) {
-  return await ipcRenderer.invoke('webauthn-get', options);
+navigator.credentials.get = function (options) {
+  return ipcRenderer.invoke('webauthn-get', options);
 };
 ```
 
@@ -22,14 +22,12 @@ navigator.credentials.get = async function (options) {
 ```js
 import Passkey from 'electron-passkey';
 
-ipcMain.on('webauth-create', async (event, options) => {
-  const result = await Passkey.handlePasskeyCreate(options);
-  event.reply(result);
+ipcMain.handle('webauthn-create', (event, options) => {
+  return Passkey.handlePasskeyCreate(options);
 });
 
-ipcMain.on('webauth-get', async (event, options) => {
-  const result = await Passkey.handlePasskeyGet(options);
-  event.reply(result);
+ipcMain.handle('webauthn-get', (event, options) => {
+  return Passkey.handlePasskeyGet(options);
 });
 ```
 
