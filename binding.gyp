@@ -2,18 +2,19 @@
   "targets": [
     {
       "target_name": "passkey",
-      "sources": [
-        "src/lib/passkey.mm"
-      ],
+      "sources": [],
       "include_dirs": [
         "src/lib",
-        "<!(node -p \"require('node-addon-api').targets\"):node_addon_api",
+        "<!(node -p \"require('node-addon-api').targets\"):node_addon_api"
       ],
       "dependencies": [
-        "<!(node -p \"require('node-addon-api').targets\"):node_addon_api",
+        "<!(node -p \"require('node-addon-api').targets\"):node_addon_api"
       ],
       "conditions": [
         ["OS=='mac'", {
+          "sources": [
+            "src/lib/passkey.mm"
+          ],
           "link_settings": {
             "libraries": [
               "-lpthread",
@@ -27,6 +28,9 @@
             "OTHER_CFLAGS": [
               "-fobjc-arc",
               "-fexceptions"
+            ],
+            "OTHER_CPLUSPLUSFLAGS": [
+              "-ObjC++"
             ]
           }
         }],

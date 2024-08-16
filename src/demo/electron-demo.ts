@@ -23,15 +23,17 @@ function createWindow() {
 
   window.loadURL('https://thirdweb.com/login?next=%2Fdashboard%2Fconnect%2Fin-app-wallets');
 
-  window.webContents.openDevTools({ mode: 'detach', activate: false });
+  window.webContents.openDevTools();
 }
 
 ipcMain.on('webauth-create', async (event, options) => {
+  console.log(`Received webauth-create: ${JSON.stringify(options)}`);
   const result = await Passkey.handlePasskeyCreate(options);
   event.reply(result);
 });
 
 ipcMain.on('webauth-get', async (event, options) => {
+  console.log(`Received webauth-get: ${JSON.stringify(options)}`);
   const result = await Passkey.handlePasskeyGet(options);
   event.reply(result);
 });

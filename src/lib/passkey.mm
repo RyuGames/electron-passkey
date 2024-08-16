@@ -1,14 +1,24 @@
 #import "passkey.h"
+// #import "passkey_objc.h"
+#import <Foundation/Foundation.h>
+#import <dispatch/dispatch.h>
+#import <AuthenticationServices/AuthenticationServices.h>
 
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500
 @interface PasskeyHandlerObjC : NSObject <ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding>
+#else
+@interface PasskeyHandlerObjC : NSObject
+#endif
+
 @property (nonatomic, strong) NSString *resultMessage;
 @property (nonatomic, assign) dispatch_semaphore_t semaphore;
 
-- (void)performCreateRequestWithOptions:(NSDictionary *)options;
-- (void)performGetRequestWithOptions:(NSDictionary *)options;
+- (void)PerformCreateRequest:(NSDictionary *)options;
+- (void)PerformGetRequest:(NSDictionary *)options;
+- (NSString *)GetResultMessage;
+
 @end
 
-#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500
 @implementation PasskeyHandlerObjC
 
 - (instancetype)init {
@@ -20,9 +30,9 @@
     return self;
 }
 
-- (void)performCreateRequestWithOptions:(NSDictionary *)options {
-    NSDictionary *publicKeyOptions = options[@"publicKey"];
+- (void)PerformCreateRequest:(NSDictionary *)options {
     if (@available(macOS 12.0, *)) {
+        NSDictionary *publicKeyOptions = options[@"publicKey"];
         NSString *rpId = publicKeyOptions[@"rp"][@"id"];
         NSString *userName = publicKeyOptions[@"user"][@"name"];
         NSData *userId = publicKeyOptions[@"user"][@"id"];
@@ -65,7 +75,7 @@
     }
 }
 
-- (void)performGetRequestWithOptions:(NSDictionary *)options {
+- (void)PerformGetRequest:(NSDictionary *)options {
     if (@available(macOS 12.0, *)) {
         NSDictionary *publicKeyOptions = options[@"publicKey"];
         NSString *rpId = publicKeyOptions[@"rpId"];
@@ -110,6 +120,11 @@
     }
 }
 
+- (NSString *)GetResultMessage {
+    return self.resultMessage;
+}
+
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500
 - (void)authorizationController:(ASAuthorizationController *)controller didCompleteWithAuthorization:(ASAuthorization *)authorization {
     self.resultMessage = @"Success";
     dispatch_semaphore_signal(self.semaphore);
@@ -123,13 +138,63 @@
 - (ASPresentationAnchor)presentationAnchorForAuthorizationController:(ASAuthorizationController *)controller {
     return [NSApplication sharedApplication].windows.firstObject;
 }
-
-@end
 #endif
 
-PasskeyHandler::PasskeyHandler(const Napi::CallbackInfo& info) 
-    : Napi::ObjectWrap<PasskeyHandler>(info) {
-    handlerObjC = [[PasskeyHandlerObjC alloc] init];
+@end
+
+NSDictionary* ConvertStringToNSDictionary(const std::string& str) {
+    NSData* jsonData = [NSData dataWithBytes:str.c_str() length:str.size()];
+    NSError* error;
+    NSDictionary* dict = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&error];
+    if (error) {
+        NSLog(@"Failed to convert string to NSDictionary: %@", error.localizedDescription);
+    }
+    return dict;
+}
+
+class PasskeyHandler::Impl {
+public:
+    Impl() {
+        handlerObjC = [[PasskeyHandlerObjC alloc] init];  // Use Objective-C allocation
+    }
+
+    ~Impl() {
+        // ARC handles memory management, so no need to manually delete or release
+    }
+
+    Napi::Value HandlePasskeyCreate(Napi::Env env, const std::string& options) {
+        NSDictionary* optionsDict = ConvertStringToNSDictionary(options);
+        [handlerObjC PerformCreateRequest:optionsDict];
+        NSString *resultMessage = [handlerObjC GetResultMessage];
+        return Napi::String::New(env, std::string([resultMessage UTF8String]));
+    }
+
+    Napi::Value HandlePasskeyGet(Napi::Env env, const std::string& options) {
+        NSDictionary* optionsDict = ConvertStringToNSDictionary(options);
+        [handlerObjC PerformGetRequest:optionsDict];
+        NSString *resultMessage = [handlerObjC GetResultMessage];
+        return Napi::String::New(env, std::string([resultMessage UTF8String]));
+    }
+
+private:
+    PasskeyHandlerObjC* handlerObjC;
+};
+
+PasskeyHandler::PasskeyHandler(const Napi::CallbackInfo& info)
+    : Napi::ObjectWrap<PasskeyHandler>(info), impl_(std::make_unique<Impl>()) {
+    // Constructor
+}
+
+PasskeyHandler::~PasskeyHandler() = default;  // Destructor is defaulted
+
+Napi::Value PasskeyHandler::HandlePasskeyCreate(const Napi::CallbackInfo& info) {
+    std::string options = info[0].As<Napi::String>();
+    return impl_->HandlePasskeyCreate(info.Env(), options);
+}
+
+Napi::Value PasskeyHandler::HandlePasskeyGet(const Napi::CallbackInfo& info) {
+    std::string options = info[0].As<Napi::String>();
+    return impl_->HandlePasskeyGet(info.Env(), options);
 }
 
 Napi::Object PasskeyHandler::Init(Napi::Env env, Napi::Object exports) {
@@ -142,40 +207,8 @@ Napi::Object PasskeyHandler::Init(Napi::Env env, Napi::Object exports) {
     return exports;
 }
 
-Napi::Value PasskeyHandler::HandlePasskeyCreate(const Napi::CallbackInfo& info) {
-    Napi::Env env = info.Env();
-    std::string options = info[0].As<Napi::String>();
-
-    NSData *optionsData = [NSData dataWithBytes:options.c_str() length:options.size()];
-    NSError *error = nil;
-    NSDictionary *optionsDict = [NSJSONSerialization JSONObjectWithData:optionsData options:0 error:&error];
-
-    if (error) {
-        return Napi::String::New(env, "Failed to parse options");
-    }
-
-    [handlerObjC performCreateRequestWithOptions:optionsDict];
-
-    dispatch_semaphore_wait(handlerObjC.semaphore, DISPATCH_TIME_FOREVER);
-
-    return Napi::String::New(env, handlerObjC.resultMessage.UTF8String);
+Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
+    return PasskeyHandler::Init(env, exports);
 }
 
-Napi::Value PasskeyHandler::HandlePasskeyGet(const Napi::CallbackInfo& info) {
-    Napi::Env env = info.Env();
-    std::string options = info[0].As<Napi::String>();
-
-    NSData *optionsData = [NSData dataWithBytes:options.c_str() length:options.size()];
-    NSError *error = nil;
-    NSDictionary *optionsDict = [NSJSONSerialization JSONObjectWithData:optionsData options:0 error:&error];
-
-    if (error) {
-        return Napi::String::New(env, "Failed to parse options");
-    }
-
-    [handlerObjC performGetRequestWithOptions:optionsDict];
-
-    dispatch_semaphore_wait(handlerObjC.semaphore, DISPATCH_TIME_FOREVER);
-
-    return Napi::String::New(env, handlerObjC.resultMessage.UTF8String);
-}
+NODE_API_MODULE(passkey, InitAll);
