@@ -1,0 +1,68 @@
+{
+    "name": "electron-passkey",
+    "version": "0.0.1",
+    "description": "A native module to handle WebAuthn passkey operations",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "install": "node-gyp-build",
+        "prebuild": "prebuildify --napi",
+        "build": "pnpm prebuild && pnpm tsc",
+        "lint": "eslint --ext .ts,.js src"
+    },
+    "files": [
+        "dist/index.d.ts",
+        "dist/index.js",
+        "dist/index.js.map",
+        "binding.gyp",
+        "src/lib",
+        "prebuilds"
+    ],
+    "devDependencies": {
+        "@types/node": "^22.3.0",
+        "@typescript-eslint/eslint-plugin": "5.57.1",
+        "@typescript-eslint/parser": "5.57.1",
+        "@typescript-eslint/typescript-estree": "5.57.1",
+        "eslint": "8.34.0",
+        "eslint-config-airbnb-base": "15.0.0",
+        "eslint-config-erb": "4.0.3",
+        "eslint-config-prettier": "8.5.0",
+        "eslint-import-resolver-node": "0.3.7",
+        "eslint-import-resolver-typescript": "2.7.1",
+        "eslint-import-resolver-webpack": "0.13.8",
+        "eslint-plugin-import": "2.26.0",
+        "eslint-plugin-jest": "26.1.3",
+        "eslint-plugin-jsx-a11y": "6.5.1",
+        "eslint-plugin-lit": "1.6.1",
+        "eslint-plugin-promise": "6.0.0",
+        "eslint-plugin-react": "7.31.11",
+        "eslint-plugin-react-hooks": "4.4.0",
+        "eslint-plugin-wc": "1.4.0",
+        "prebuildify": "~6.0.1",
+        "prettier": "2.6.2",
+        "typescript": "5.x.x"
+    },
+    "dependencies": {
+        "node-addon-api": "^8.1.0",
+        "node-gyp": "~10.2.0",
+        "node-gyp-build": "~4.8.1"
+    },
+    "gypfile": true,
+    "engines": {
+        "node": ">= 20"
+    },
+    "prettier": {
+        "overrides": [
+            {
+                "files": [
+                    ".prettierrc",
+                    ".eslintrc"
+                ],
+                "options": {
+                    "parser": "json"
+                }
+            }
+        ],
+        "singleQuote": true
+    }
+}
