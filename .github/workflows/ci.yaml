@@ -1,0 +1,49 @@
+name: Prebuild
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  prebuild-darwin:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - run: pnpm --frozen-lockfile
+      - run: pnpm prebuild --arch x64
+      - run: pnpm prebuild --arch arm64
+      - uses: actions/upload-artifact@v3
+        with:
+          name: darwin
+          path: prebuilds
+
+  build-package:
+    needs:
+      - prebuild-darwin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: darwin
+          path: prebuilds
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - run: pnpm --frozen-lockfile --ignore-scripts
+      - run: pnpm tsc
+      - name: Rename .gitignore for prebuild
+        run: |
+          mv .gitignore .gitignore.main
+          mv .gitignore.prebuild .gitignore
+      - name: Commit and push compiled assets
+        run: |
+          git config --global user.email "wyatt@ryu.games"
+          git config --global user.name "Ryu Github Actions"
+          git add --all
+          git commit -m "Add compiled assets"
+          git push origin +HEAD:prebuild
