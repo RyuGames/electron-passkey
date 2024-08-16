@@ -1,19 +1,21 @@
-name: Prebuild
+name: Prebuild and package
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - main
 
 jobs:
   prebuild-darwin:
+    if: ${{ github.event.pull_request.merged == true && (github.event.pull_request.title == 'Version Packages' || startsWith(github.event.pull_request.head.ref, 'changeset-release/')) }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
           version: 9
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
@@ -38,7 +40,7 @@ jobs:
         with:
           name: darwin
           path: prebuilds
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
@@ -50,8 +52,8 @@ jobs:
           mv .gitignore.prebuild .gitignore
       - name: Commit and push compiled assets
         run: |
-          git config --global user.email "wyatt@ryu.games"
-          git config --global user.name "Ryu Github Actions"
+          git config user.email "wyatt@ryu.games"
+          git config user.name "Ryu Github Actions"
           git add --all
           git commit -m "Add compiled assets"
-          git push origin +HEAD:prebuild
+          git push origin +HEAD:prebuild || echo "Failed to push changes"

@@ -12,20 +12,34 @@
       "dependencies": [
         "<!(node -p \"require('node-addon-api').targets\"):node_addon_api",
       ],
-      "link_settings": {
-        "libraries": [
-          "-lpthread",
-          "-framework AppKit",
-          "-framework ApplicationServices"
-        ]
-      },
-      "xcode_settings": {
-        "GCC_SYMBOLS_PRIVATE_EXTERN": "YES",
-        "OTHER_CFLAGS": [
-          "-fobjc-arc",
-          "-fexceptions"
-        ]
-      },
+      "conditions": [
+        ["OS=='mac'", {
+          "link_settings": {
+            "libraries": [
+              "-lpthread",
+              "-framework AppKit",
+              "-framework ApplicationServices"
+            ]
+          },
+          "xcode_settings": {
+            "GCC_SYMBOLS_PRIVATE_EXTERN": "YES",
+            "OTHER_CFLAGS": [
+              "-fobjc-arc",
+              "-fexceptions"
+            ]
+          }
+        }],
+        ["OS=='linux'", {
+          "defines": [
+            "_GNU_SOURCE"
+          ],
+          "link_settings": {
+            "libraries": [
+              "-lxcb", "-lpthread"
+            ]
+          }
+        }]
+      ],
       "cflags": [
         "-std=c++11",
         "-pedantic",
