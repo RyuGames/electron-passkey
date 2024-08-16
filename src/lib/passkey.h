@@ -1,7 +1,10 @@
-#import <napi.h>
-#import <Foundation/Foundation.h>
-#import <dispatch/dispatch.h>
-#import <AuthenticationServices/AuthenticationServices.h>
+#ifndef PASSKEY_HANDLER_H_
+#define PASSKEY_HANDLER_H_
+
+#include <napi.h>
+#include <Foundation/Foundation.h>
+#include <dispatch/dispatch.h>
+#include <AuthenticationServices/AuthenticationServices.h>
 
 @class PasskeyHandlerObjC;
 
@@ -17,5 +20,7 @@ private:
     void PerformCreateRequest(const std::string& options);
     void PerformGetRequest(const std::string& options);
 
-    PasskeyHandlerObjC* handlerObjC; 
+    PasskeyHandlerObjC* handlerObjC;
 };
+
+#endif  // PASSKEY_HANDLER_H_
