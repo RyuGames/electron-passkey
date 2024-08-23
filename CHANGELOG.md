@@ -1,5 +1,11 @@
 # electron-passkey
 
+## 0.0.6
+
+### Patch Changes
+
+- 4aaa1ba: Add check for os to make sure running on macOS
+
 ## 0.0.5
 
 ### Patch Changes
