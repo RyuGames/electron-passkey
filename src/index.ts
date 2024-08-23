@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 
-export interface PublicKeyCredentialCreationOptions {
+interface PublicKeyCredentialCreationOptions {
   rp: {
     id: string;
     name: string;
@@ -27,12 +27,12 @@ export interface PublicKeyCredentialCreationOptions {
 
 type ExtendedAuthenticatorTransport = AuthenticatorTransport | 'smart-card';
 
-export interface CredentialDescriptor {
+interface CredentialDescriptor {
   id: string;
   transports: ExtendedAuthenticatorTransport[];
 }
 
-export interface PublicKeyCredentialRequestOptions {
+interface PublicKeyCredentialRequestOptions {
   rpId?: string;
   challenge: Buffer;
   allowCredentials?: Array<CredentialDescriptor>;
@@ -41,7 +41,7 @@ export interface PublicKeyCredentialRequestOptions {
   extensions?: AuthenticationExtensionsClientInputs;
 }
 
-export interface PasskeyOptions {
+interface PasskeyOptions {
   publicKey:
     | PublicKeyCredentialCreationOptions
     | PublicKeyCredentialRequestOptions;
@@ -107,4 +107,4 @@ class Passkey {
   }
 }
 
-export default Passkey;
+export = Passkey;
