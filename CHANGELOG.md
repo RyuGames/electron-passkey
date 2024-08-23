@@ -1,5 +1,11 @@
 # electron-passkey
 
+## 0.0.5
+
+### Patch Changes
+
+- b26cefe: Fix export syntax
+
 ## 0.0.4
 
 ### Patch Changes
