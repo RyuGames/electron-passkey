@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import os from 'node:os';
 
 interface PublicKeyCredentialCreationOptions {
   rp: {
@@ -73,6 +74,8 @@ class Passkey {
 
   private handler: any;
 
+  private platform = os.platform();
+
   private constructor() {
     this.handler = new lib.PasskeyHandler(); // Create an instance of PasskeyHandler
   }
@@ -86,6 +89,11 @@ class Passkey {
   }
 
   handlePasskeyCreate(options: PasskeyOptions): Promise<string> {
+    if (this.platform !== 'darwin') {
+      throw new Error(
+        `electron-passkey is meant for macOS only and should NOT be run on ${this.platform}`,
+      );
+    }
     options.publicKey.challenge = arrayBufferToBase64(
       options.publicKey.challenge as ArrayBuffer,
     );
@@ -99,6 +107,11 @@ class Passkey {
   }
 
   handlePasskeyGet(options: PasskeyOptions): Promise<string> {
+    if (this.platform !== 'darwin') {
+      throw new Error(
+        `electron-passkey is meant for macOS only and should NOT be run on ${this.platform}`,
+      );
+    }
     return this.handler.HandlePasskeyGet(JSON.stringify(options));
   }
 
