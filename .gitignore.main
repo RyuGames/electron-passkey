@@ -5,6 +5,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
+.idea
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
@@ -81,7 +82,7 @@ web_modules/
 
 # Nuxt.js build / generate output
 .nuxt
-# dist
+dist
 
 # Gatsby files
 .cache/
@@ -114,8 +115,8 @@ web_modules/
 .yarn/build-state.yml
 .pnp.*
 
-# build
-# prebuilds
+build
+prebuilds
 
 # Mac storage
 .DS_Store
