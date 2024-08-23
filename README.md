@@ -1,6 +1,6 @@
 # electron-passkey
 
-Native module for electron applications to use passkey funcitonality
+Native module for electron applications to use passkey funcitonality in macOS apps.
 
 ### Usage
 
@@ -55,5 +55,7 @@ ipcMain.handle('webauthn-get', (event, options) => {
 8) Build your electron application and sign it
 
 ### Deployments
+
+Here is how this repo handles deployments:
 
 ![Deployments](Deployment.png "Deplyoments")
