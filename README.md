@@ -40,7 +40,7 @@ ipcMain.handle('webauthn-get', (event, options) => {
 ![AssociatedDomains](images/AssociatedDomains.png "Associated Domains")
 3) You may need to create a provisioning profile for macOS development on your device and/or for distribution
 4) Create a webserver to serve an AASA file [as specificed in the docs](https://developer.apple.com/documentation/xcode/supporting-associated-domains#Add-the-associated-domain-file-to-your-website)
-5) Test it with the [yURL validator](https://branch.io/resources/aasa-validator/) and/or [branch.io validator](https://branch.io/resources/aasa-validator/)
+5) Test it with the [yURL validator](https://yurl.chayev.com) and/or [branch.io validator](https://branch.io/resources/aasa-validator/)
 6) Add the following to your entitlements plist
 ```
 <key>com.apple.application-identifier</key>
