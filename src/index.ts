@@ -103,7 +103,8 @@ class Passkey {
     options.publicKey.challenge = arrayBufferToBase64(
       options.publicKey.challenge as ArrayBuffer,
     );
-    (options.publicKey as PublicKeyCredentialCreationOptions).rp.id = this.domain;
+    (options.publicKey as PublicKeyCredentialCreationOptions).rp.id =
+      this.domain;
     (options.publicKey as PublicKeyCredentialCreationOptions).user.id =
       arrayBufferToBase64(
         (options.publicKey as PublicKeyCredentialCreationOptions).user

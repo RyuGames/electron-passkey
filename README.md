@@ -22,6 +22,8 @@ navigator.credentials.get = function (options) {
 ```js
 import Passkey from 'electron-passkey';
 
+Passkey.init('domain.com');
+
 ipcMain.handle('webauthn-create', (event, options) => {
   return Passkey.getInstance().handlePasskeyCreate(options);
 });
@@ -52,7 +54,8 @@ ipcMain.handle('webauthn-get', (event, options) => {
 </array>
 ```
 7) Check to see if your AASA is being cached by the Apple CDN at `https://app-site-association.cdn-apple.com/a/v1/DOMAIN`
-8) Build your electron application and sign it
+8) Make sure to call `Passkey.init()` and pass in your domain
+9) Build your electron application and sign it
 
 ### Deployments
 
