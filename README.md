@@ -22,6 +22,8 @@ navigator.credentials.get = function (options) {
 ```js
 import Passkey from 'electron-passkey';
 
+Passkey.getInstance().init('domain.com');
+
 ipcMain.handle('webauthn-create', (event, options) => {
   return Passkey.getInstance().handlePasskeyCreate(options);
 });
@@ -40,7 +42,7 @@ ipcMain.handle('webauthn-get', (event, options) => {
 ![AssociatedDomains](images/AssociatedDomains.png "Associated Domains")
 3) You may need to create a provisioning profile for macOS development on your device and/or for distribution
 4) Create a webserver to serve an AASA file [as specificed in the docs](https://developer.apple.com/documentation/xcode/supporting-associated-domains#Add-the-associated-domain-file-to-your-website)
-5) Test it with the [yURL validator](https://branch.io/resources/aasa-validator/) and/or [branch.io validator](https://branch.io/resources/aasa-validator/)
+5) Test it with the [yURL validator](https://yurl.chayev.com) and/or [branch.io validator](https://branch.io/resources/aasa-validator/)
 6) Add the following to your entitlements plist
 ```
 <key>com.apple.application-identifier</key>
@@ -52,7 +54,8 @@ ipcMain.handle('webauthn-get', (event, options) => {
 </array>
 ```
 7) Check to see if your AASA is being cached by the Apple CDN at `https://app-site-association.cdn-apple.com/a/v1/DOMAIN`
-8) Build your electron application and sign it
+8) Make sure to call `Passkey.getInstance().init()` and pass in your domain
+9) Build your electron application and sign it
 
 ### Deployments
 
