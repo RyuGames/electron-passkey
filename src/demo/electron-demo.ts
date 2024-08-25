@@ -8,6 +8,8 @@ import './ipcHandlers';
 // https://github.com/electron/electron/issues/25153
 // app.disableHardwareAcceleration();
 
+Passkey.getInstance().init('google.com');
+
 let window: BrowserWindow;
 
 function createWindow() {
