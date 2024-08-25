@@ -144,13 +144,57 @@ NSData* ConvertBufferToNSData(Napi::Buffer<uint8_t> buffer) {
         NSString *credentialId = [credential.credentialID base64EncodedStringWithOptions:0];
         
         NSDictionary *responseDict = @{
-            @"clientDataJSON": [clientDataJSON base64EncodedStringWithOptions:0],
-            @"attestationObject": [attestationObject base64EncodedStringWithOptions:0],
-            @"credentialId": credentialId
+            @"clientDataJSON": [credential.rawClientDataJSON base64EncodedStringWithOptions:0],
+            @"attestationObject": [credential.rawAttestationObject base64EncodedStringWithOptions:0]
+        };
+        
+        // Assemble the PublicKeyCredential object structure
+        NSDictionary *publicKeyCredentialDict = @{
+            @"id": [credential.credentialID base64EncodedStringWithOptions:0], // id is the base64-encoded credential ID
+            @"type": @"public-key", // Fixed value for PublicKeyCredential
+            @"rawId": [credential.credentialID base64EncodedStringWithOptions:0], // rawId is the raw NSData representing the credential ID
+            @"response": responseDict, // The response object
+            @"clientExtensionResults": @{}, // An empty dictionary, as no extensions are used in this example
+            @"transports": @[] // Transports are not directly available in ASAuthorizationPlatformPublicKeyCredentialRegistration
         };
         
         NSError *error;
-        NSData *responseData = [NSJSONSerialization dataWithJSONObject:responseDict options:0 error:&error];
+        NSData *responseData = [NSJSONSerialization dataWithJSONObject:publicKeyCredentialDict options:0 error:&error];
+        if (error) {
+            NSLog(@"[authorizationController didCompleteWithAuthorization]: Failed to serialize response: %@", error.localizedDescription);
+            if (self.completionHandler) {
+                self.completionHandler(nil, error.localizedDescription);
+            }
+        } else {
+            NSString *resultMessage = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
+            if (self.completionHandler) {
+                self.completionHandler(resultMessage, nil);
+            }
+        }
+    } else if ([authorization.credential isKindOfClass:[ASAuthorizationPlatformPublicKeyCredentialAssertion class]]) {
+        ASAuthorizationPlatformPublicKeyCredentialAssertion *credential = (ASAuthorizationPlatformPublicKeyCredentialAssertion *)authorization.credential;
+
+        // Create the "response" dictionary, simulating the AuthenticatorAssertionResponse
+        NSDictionary *responseDict = @{
+            @"clientDataJSON": [credential.rawClientDataJSON base64EncodedStringWithOptions:0],
+            @"authenticatorData": [credential.rawAuthenticatorData base64EncodedStringWithOptions:0],
+            @"signature": [credential.signature base64EncodedStringWithOptions:0],
+            @"userHandle": credential.userID ? [credential.userID base64EncodedStringWithOptions:0] : [NSNull null]
+        };
+        
+        // Assemble the PublicKeyCredential object structure
+        NSDictionary *publicKeyCredentialDict = @{
+            @"id": [credential.credentialID base64EncodedStringWithOptions:0], // id is the base64-encoded credential ID
+            @"type": @"public-key", // Fixed value for PublicKeyCredential
+            @"rawId": [credential.credentialID base64EncodedStringWithOptions:0], // rawId is the base64-encoded credential ID
+            @"response": responseDict, // The response object
+            @"clientExtensionResults": @{}, // An empty dictionary, as no extensions are used in this example
+            @"transports": @[] // Transports are not directly available in ASAuthorizationPlatformPublicKeyCredentialAssertion
+        };
+
+        // Serialize the PublicKeyCredential object into JSON
+        NSError *error;
+        NSData *responseData = [NSJSONSerialization dataWithJSONObject:publicKeyCredentialDict options:0 error:&error];
         if (error) {
             NSLog(@"[authorizationController didCompleteWithAuthorization]: Failed to serialize response: %@", error.localizedDescription);
             if (self.completionHandler) {
@@ -282,6 +326,8 @@ public:
                 deferred.Resolve(Napi::String::New(env, std::string([resultMessage UTF8String])));
             }
         }];
+
+        return deferred.Promise();
     }
 
 private:

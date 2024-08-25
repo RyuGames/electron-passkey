@@ -50,10 +50,13 @@ interface PasskeyOptions {
   signal?: AbortSignal;
 }
 
+interface PasskeyHandler {
+  HandlePasskeyCreate(options: string): Promise<string>;
+  HandlePasskeyGet(options: string): Promise<string>;
+}
+
 interface PasskeyInterface {
-  HandlePasskeyCreate: (options: string) => Promise<string>;
-  HandlePasskeyGet: (options: string) => Promise<string>;
-  PasskeyHandler: any;
+  PasskeyHandler: new () => PasskeyHandler;
 }
 
 const lib: PasskeyInterface = require('node-gyp-build')(join(__dirname, '..'));
@@ -68,11 +71,21 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i += 1) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
 class Passkey {
   // eslint-disable-next-line
   private static instance: Passkey;
 
-  private handler: any;
+  private handler: PasskeyHandler;
 
   private platform = os.platform();
 
@@ -94,7 +107,9 @@ class Passkey {
     this.domain = domain;
   }
 
-  handlePasskeyCreate(options: PasskeyOptions): Promise<string> {
+  async handlePasskeyCreate(
+    options: PasskeyOptions,
+  ): Promise<PublicKeyCredential> {
     if (this.platform !== 'darwin') {
       throw new Error(
         `electron-passkey is meant for macOS only and should NOT be run on ${this.platform}`,
@@ -111,10 +126,27 @@ class Passkey {
           .id as ArrayBuffer,
       );
 
-    return this.handler.HandlePasskeyCreate(JSON.stringify(options));
+    const rawString = await this.handler.HandlePasskeyCreate(
+      JSON.stringify(options),
+    );
+    let raw;
+    try {
+      raw = JSON.parse(rawString);
+    } catch (e: any) {
+      throw new Error(`Failed to parse JSON response: ${e.message}`);
+    }
+
+    try {
+      raw.rawId = base64ToArrayBuffer(raw.rawId);
+    } catch (e: any) {
+      throw new Error(`Failed to convert rawId from base64: ${e.message}`);
+    }
+    return raw;
   }
 
-  handlePasskeyGet(options: PasskeyOptions): Promise<string> {
+  async handlePasskeyGet(
+    options: PasskeyOptions,
+  ): Promise<PublicKeyCredential> {
     if (this.platform !== 'darwin') {
       throw new Error(
         `electron-passkey is meant for macOS only and should NOT be run on ${this.platform}`,
@@ -122,7 +154,22 @@ class Passkey {
     }
     (options.publicKey as PublicKeyCredentialRequestOptions).rpId = this.domain;
 
-    return this.handler.HandlePasskeyGet(JSON.stringify(options));
+    const rawString = await this.handler.HandlePasskeyGet(
+      JSON.stringify(options),
+    );
+    let raw;
+    try {
+      raw = JSON.parse(rawString);
+    } catch (e: any) {
+      throw new Error(`Failed to parse JSON response: ${e.message}`);
+    }
+
+    try {
+      raw.rawId = base64ToArrayBuffer(raw.rawId);
+    } catch (e: any) {
+      throw new Error(`Failed to convert rawId from base64: ${e.message}`);
+    }
+    return raw;
   }
 
   static getPackageName(): string {
