@@ -1,5 +1,11 @@
 # electron-passkey
 
+## 0.1.0
+
+### Minor Changes
+
+- d9b644d: A lot of cleanup and refactoring of the implementation
+
 ## 0.0.6
 
 ### Patch Changes
