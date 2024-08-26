@@ -62,6 +62,18 @@ class Passkey {
     }
     (options.publicKey as PublicKeyCredentialRequestOptions).rpId = this.domain;
 
+    options.publicKey.challenge = arrayBufferToBase64(
+      options.publicKey.challenge as ArrayBuffer,
+    );
+
+    (options.publicKey as PublicKeyCredentialRequestOptions).allowCredentials =
+      (
+        options.publicKey as PublicKeyCredentialRequestOptions
+      ).allowCredentials?.filter((cred) => {
+        return (
+          cred && cred.id && typeof cred.id === 'string' && cred.id.length > 0
+        );
+      });
     return this.handler.HandlePasskeyGet(JSON.stringify(options));
   }
 

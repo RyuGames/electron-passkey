@@ -5,10 +5,6 @@
 
 typedef void (^PasskeyCompletionHandler)(NSString *resultMessage, NSString *errorMessage);
 
-NSData* ConvertBufferToNSData(Napi::Buffer<uint8_t> buffer) {
-    return [NSData dataWithBytes:buffer.Data() length:buffer.Length()];
-}
-
 @interface PasskeyHandlerObjC : NSObject <ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding>
 
 @property (nonatomic, strong) PasskeyCompletionHandler completionHandler;
@@ -28,7 +24,7 @@ NSData* ConvertBufferToNSData(Napi::Buffer<uint8_t> buffer) {
 - (void)PerformCreateRequest:(NSDictionary *)options withCompletionHandler:(PasskeyCompletionHandler)completionHandler {
     self.completionHandler = completionHandler;
 
-    if (@available(macOS 12.0, *)) {
+    if (@available(macOS 13.5, *)) {
         NSDictionary *publicKeyOptions = options[@"publicKey"];
         NSString *rpId = publicKeyOptions[@"rp"][@"id"];
         NSString *userName = publicKeyOptions[@"user"][@"name"];
@@ -63,6 +59,10 @@ NSData* ConvertBufferToNSData(Napi::Buffer<uint8_t> buffer) {
                 request.userVerificationPreference = ASAuthorizationPublicKeyCredentialUserVerificationPreferenceDiscouraged;
             }
         }
+        // NSString *attestationPreference = publicKeyOptions[@"attestation"];
+        // if (attestationPreference) {
+        //     request.attestationPreference = attestationPreference;
+        // }
 
         ASAuthorizationController *controller =
             [[ASAuthorizationController alloc] initWithAuthorizationRequests:@[request]];
@@ -84,10 +84,11 @@ NSData* ConvertBufferToNSData(Napi::Buffer<uint8_t> buffer) {
 - (void)PerformGetRequest:(NSDictionary *)options withCompletionHandler:(PasskeyCompletionHandler)completionHandler {
     self.completionHandler = completionHandler;
 
-    if (@available(macOS 12.0, *)) {
+    if (@available(macOS 13.5, *)) {
         NSDictionary *publicKeyOptions = options[@"publicKey"];
         NSString *rpId = publicKeyOptions[@"rpId"];
-        NSData *challenge = publicKeyOptions[@"challenge"];
+        NSString *challengeString = publicKeyOptions[@"challenge"];
+        NSData *challenge = [[NSData alloc] initWithBase64EncodedString:challengeString options:0];
 
         ASAuthorizationPlatformPublicKeyCredentialProvider *provider =
             [[ASAuthorizationPlatformPublicKeyCredentialProvider alloc] initWithRelyingPartyIdentifier:rpId];
@@ -143,7 +144,8 @@ NSData* ConvertBufferToNSData(Napi::Buffer<uint8_t> buffer) {
         NSData *clientDataJSON = credential.rawClientDataJSON;
         NSData *attestationObject = credential.rawAttestationObject;
         NSString *credentialId = [credential.credentialID base64EncodedStringWithOptions:0];
-        
+        ASAuthorizationPublicKeyCredentialAttachment attachment = credential.attachment;
+
         NSDictionary *responseDict = @{
             @"clientDataJSON": [clientDataJSON base64EncodedStringWithOptions:0],
             @"attestationObject": [attestationObject base64EncodedStringWithOptions:0]
@@ -156,7 +158,8 @@ NSData* ConvertBufferToNSData(Napi::Buffer<uint8_t> buffer) {
             @"rawId": credentialId, // rawId is the raw NSData representing the credential ID
             @"response": responseDict, // The response object
             @"clientExtensionResults": @{}, // An empty dictionary, as no extensions are used in this example
-            @"transports": @[] // Transports are not directly available in ASAuthorizationPlatformPublicKeyCredentialRegistration
+            @"transports": @[], // Transports are not directly available in ASAuthorizationPlatformPublicKeyCredentialRegistration
+            @"authenticatorAttachment": attachment == ASAuthorizationPublicKeyCredentialAttachmentPlatform ? @'platform' : @'cross-platform',
         };
         
         if (![NSJSONSerialization isValidJSONObject:publicKeyCredentialDict]) {
@@ -185,6 +188,7 @@ NSData* ConvertBufferToNSData(Napi::Buffer<uint8_t> buffer) {
         ASAuthorizationPlatformPublicKeyCredentialAssertion *credential = (ASAuthorizationPlatformPublicKeyCredentialAssertion *)authorization.credential;
 
         NSString *credentialId = [credential.credentialID base64EncodedStringWithOptions:0];
+        ASAuthorizationPublicKeyCredentialAttachment attachment = credential.attachment;
 
         // Create the "response" dictionary, simulating the AuthenticatorAssertionResponse
         NSDictionary *responseDict = @{
@@ -201,7 +205,8 @@ NSData* ConvertBufferToNSData(Napi::Buffer<uint8_t> buffer) {
             @"rawId": credentialId, // rawId is the base64-encoded credential ID
             @"response": responseDict, // The response object
             @"clientExtensionResults": @{}, // An empty dictionary, as no extensions are used in this example
-            @"transports": @[] // Transports are not directly available in ASAuthorizationPlatformPublicKeyCredentialAssertion
+            @"transports": @[], // Transports are not directly available in ASAuthorizationPlatformPublicKeyCredentialAssertion
+            @"authenticatorAttachment": attachment == ASAuthorizationPublicKeyCredentialAttachmentPlatform ? @'platform' : @'cross-platform',
         };
 
         if (![NSJSONSerialization isValidJSONObject:publicKeyCredentialDict]) {
