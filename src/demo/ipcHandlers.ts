@@ -1,7 +1,5 @@
 import { ipcMain } from 'electron';
-// eslint-disable-next-line
 import Passkey from '..';
-// eslint-disable-next-line
 import { CREATE_CREDS, GET_CREDS } from './ipcKeys';
 
 ipcMain.handle(CREATE_CREDS, (event, options) => {

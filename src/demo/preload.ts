@@ -1,5 +1,4 @@
 import { ipcRenderer } from 'electron';
-// eslint-disable-next-line
 import { CREATE_CREDS, GET_CREDS } from './ipcKeys';
 
 navigator.credentials.create = (options) => {

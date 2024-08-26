@@ -1,8 +1,6 @@
 import { join } from 'path';
 import { app, BrowserWindow } from 'electron';
-// eslint-disable-next-line
 import Passkey from '..';
-// eslint-disable-next-line
 import './ipcHandlers';
 
 // https://github.com/electron/electron/issues/25153

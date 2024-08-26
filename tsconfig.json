@@ -1,14 +1,25 @@
 {
   "compilerOptions": {
-    "target": "ES2018",
+    "declarationMap": true,
+    "target": "ES2021",
     "alwaysStrict": true,
     "strict": true,
     "module": "CommonJS",
     "moduleResolution": "node",
     "esModuleInterop": true,
+    "pretty": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
     "sourceMap": true,
     "outDir": "dist",
-    "declaration": true
+    "declaration": true,
+    "allowJs": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": false,
+    "noImplicitAny": false,
+    "noFallthroughCasesInSwitch": true
   },
   "include": [
     "src/**/*",
