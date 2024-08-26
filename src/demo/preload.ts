@@ -11,4 +11,7 @@ import Passkey from '..';
 //   return ipcRenderer.invoke(GET_CREDS, options);
 // };
 
-Passkey.getInstance().attachRenderer(window, ipcRenderer);
+navigator.credentials.create = (options) =>
+  Passkey.getInstance().attachCreateToRenderer(ipcRenderer, options);
+navigator.credentials.get = (options) =>
+  Passkey.getInstance().attachGetToRenderer(ipcRenderer, options);

@@ -69,35 +69,29 @@ class Passkey {
     return this.handler.HandlePasskeyGet(JSON.stringify(options));
   }
 
-  mapCredential(rawString: string, isCreate: boolean): PublicKeyCredential {
-    if (this.platform !== 'darwin') {
-      throw new Error(
-        `electron-passkey is meant for macOS only and should NOT be run on ${this.platform}`,
-      );
-    }
-
-    return mapPublicKey(rawString, isCreate);
+  async attachCreateToRenderer(
+    ipcRenderer: IpcRenderer,
+    options: any,
+  ): Promise<PublicKeyCredential> {
+    const rawString: string = await ipcRenderer.invoke(
+      PassKeyMethods.createPasskey,
+      options,
+    );
+    return mapPublicKey(rawString, true);
   }
 
-  attachRenderer(window: Window, ipcRenderer: IpcRenderer): void {
-    window.navigator.credentials.create = async (options: any) => {
-      const rawString = await ipcRenderer.invoke(
-        PassKeyMethods.createPasskey,
-        options,
-      );
-      return this.mapCredential(rawString, true);
-    };
-
-    window.navigator.credentials.get = async (options: any) => {
-      const rawString = await ipcRenderer.invoke(
-        PassKeyMethods.getPasskey,
-        options,
-      );
-      return this.mapCredential(rawString, false);
-    };
+  async attachGetToRenderer(
+    ipcRenderer: IpcRenderer,
+    options: any,
+  ): Promise<PublicKeyCredential> {
+    const rawString: string = await ipcRenderer.invoke(
+      PassKeyMethods.getPasskey,
+      options,
+    );
+    return mapPublicKey(rawString, false);
   }
 
-  attachMain(ipcMain: IpcMain): void {
+  attachHandlersToMain(ipcMain: IpcMain): void {
     ipcMain.handle(PassKeyMethods.createPasskey, (_event, options) =>
       this.handlePasskeyCreate(options),
     );

@@ -6,7 +6,7 @@ import Passkey from '..';
 // app.disableHardwareAcceleration();
 
 Passkey.getInstance().init('google.com');
-Passkey.getInstance().attachMain(ipcMain);
+Passkey.getInstance().attachHandlersToMain(ipcMain);
 
 let window: BrowserWindow;
 

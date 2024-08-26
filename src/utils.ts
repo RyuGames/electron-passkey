@@ -34,11 +34,19 @@ export function mapPublicKey(
   const raw = JSON.parse(rawString);
   const mapped = { ...raw };
 
+  mapped.rawId = base64ToArrayBuffer(raw.id);
   mapped.getClientExtensionResults = () => raw.clientExtensionResults;
 
   const { response } = raw;
 
   if (isCreate) {
+    mapped.response.clientDataJSON = base64ToArrayBuffer(
+      mapped.response.clientDataJSON,
+    );
+    mapped.response.attestationObject = base64ToArrayBuffer(
+      mapped.response.attestationObject,
+    );
+
     mapped.response = {
       ...response,
       getAuthenticatorData(): ArrayBuffer {
@@ -69,7 +77,7 @@ export function mapPublicKey(
       return {
         type: raw.type,
         id: raw.id,
-        rawId: toBase64url(raw.rawId), // Same as ID, but useful in tests
+        rawId: mapped.rawId, // Same as ID, but useful in tests
         authenticatorAttachment:
           raw.authenticatorAttachment as AuthenticatorAttachment,
         clientExtensionResults: raw.getClientExtensionResults(),
@@ -84,11 +92,24 @@ export function mapPublicKey(
       };
     };
   } else {
+    mapped.response.clientDataJSON = base64ToArrayBuffer(
+      mapped.response.clientDataJSON,
+    );
+    mapped.response.authenticatorData = base64ToArrayBuffer(
+      mapped.response.authenticatorData,
+    );
+    mapped.response.signature = base64ToArrayBuffer(mapped.response.signature);
+    if (mapped.response.userHandle) {
+      mapped.response.userHandle = base64ToArrayBuffer(
+        mapped.response.userHandle,
+      );
+    }
+
     mapped.response.toJson = () => {
       return {
         clientExtensionResults: raw.getClientExtensionResults(),
         id: raw.id,
-        rawId: toBase64url(raw.id),
+        rawId: mapped.rawId,
         type: raw.type,
         authenticatorAttachment:
           raw.authenticatorAttachment as AuthenticatorAttachment,
