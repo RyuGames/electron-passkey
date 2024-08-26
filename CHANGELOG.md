@@ -1,5 +1,11 @@
 # electron-passkey
 
+## 0.2.0
+
+### Minor Changes
+
+- 14dabf8: Greatly simplify api, major fixes to functionality
+
 ## 0.1.0
 
 ### Minor Changes
