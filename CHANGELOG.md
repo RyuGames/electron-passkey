@@ -1,5 +1,11 @@
 # electron-passkey
 
+## 0.2.1
+
+### Patch Changes
+
+- 0887eb8: Added missing source files to package
+
 ## 0.2.0
 
 ### Minor Changes
