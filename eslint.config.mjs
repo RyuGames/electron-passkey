@@ -99,13 +99,6 @@ export default [
       'jsx-a11y/label-has-associated-control': 'off',
       'no-continue': 'off',
 
-      // "import-x/extensions": ["error", {
-      //     js: "never",
-      //     jsx: "never",
-      //     ts: "never",
-      //     tsx: "never",
-      // }],
-
       'import/extensions': [
         'error',
         {
