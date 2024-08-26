@@ -8,29 +8,20 @@ Native module for electron applications to use passkey funcitonality in macOS ap
 ```js
 import { ipcRenderer } from 'electron';
 
-navigator.credentials.create = function (options) {
-  return ipcRenderer.invoke('webauthn-create', options);
-};
+navigator.credentials.create = (options) =>
+  Passkey.getInstance().attachCreateToRenderer(ipcRenderer, options);
 
-navigator.credentials.get = function (options) {
-  return ipcRenderer.invoke('webauthn-get', options);
-};
+navigator.credentials.get = (options) =>
+  Passkey.getInstance().attachGetToRenderer(ipcRenderer, options);
 ```
 
 2) Forward calls in main process
 
 ```js
+import { ipcMain } from 'electron';
 import Passkey from 'electron-passkey';
 
-Passkey.getInstance().init('domain.com');
-
-ipcMain.handle('webauthn-create', (event, options) => {
-  return Passkey.getInstance().handlePasskeyCreate(options);
-});
-
-ipcMain.handle('webauthn-get', (event, options) => {
-  return Passkey.getInstance().handlePasskeyGet(options);
-});
+Passkey.getInstance().attachHandlersToMain('domain.com', ipcMain);
 ```
 
 ### Entitlements Setup
@@ -54,7 +45,7 @@ ipcMain.handle('webauthn-get', (event, options) => {
 </array>
 ```
 7) Check to see if your AASA is being cached by the Apple CDN at `https://app-site-association.cdn-apple.com/a/v1/DOMAIN`
-8) Make sure to call `Passkey.getInstance().init()` and pass in your domain
+8) Make sure to pass in your domain to `attachHandlersToMain()`
 9) Build your electron application and sign it
 
 ### Deployments

@@ -34,11 +34,7 @@ class Passkey {
     return Passkey.instance;
   }
 
-  init(domain: string): void {
-    this.domain = domain;
-  }
-
-  handlePasskeyCreate(options: PasskeyOptions): Promise<string> {
+  private handlePasskeyCreate(options: PasskeyOptions): Promise<string> {
     if (this.platform !== 'darwin') {
       throw new Error(
         `electron-passkey is meant for macOS only and should NOT be run on ${this.platform}`,
@@ -58,7 +54,7 @@ class Passkey {
     return this.handler.HandlePasskeyCreate(JSON.stringify(options));
   }
 
-  handlePasskeyGet(options: PasskeyOptions): Promise<string> {
+  private handlePasskeyGet(options: PasskeyOptions): Promise<string> {
     if (this.platform !== 'darwin') {
       throw new Error(
         `electron-passkey is meant for macOS only and should NOT be run on ${this.platform}`,
@@ -91,7 +87,9 @@ class Passkey {
     return mapPublicKey(rawString, false);
   }
 
-  attachHandlersToMain(ipcMain: IpcMain): void {
+  attachHandlersToMain(domain: string, ipcMain: IpcMain): void {
+    this.domain = domain;
+
     ipcMain.handle(PassKeyMethods.createPasskey, (_event, options) =>
       this.handlePasskeyCreate(options),
     );

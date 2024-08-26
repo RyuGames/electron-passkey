@@ -5,8 +5,7 @@ import Passkey from '..';
 // https://github.com/electron/electron/issues/25153
 // app.disableHardwareAcceleration();
 
-Passkey.getInstance().init('google.com');
-Passkey.getInstance().attachHandlersToMain(ipcMain);
+Passkey.getInstance().attachHandlersToMain('google.com', ipcMain);
 
 let window: BrowserWindow;
 
