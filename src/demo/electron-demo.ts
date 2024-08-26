@@ -1,14 +1,11 @@
 import { join } from 'path';
-import { app, BrowserWindow } from 'electron';
-// eslint-disable-next-line
+import { app, BrowserWindow, ipcMain } from 'electron';
 import Passkey from '..';
-// eslint-disable-next-line
-import './ipcHandlers';
 
 // https://github.com/electron/electron/issues/25153
 // app.disableHardwareAcceleration();
 
-Passkey.getInstance().init('google.com');
+Passkey.getInstance().attachHandlersToMain('google.com', ipcMain);
 
 let window: BrowserWindow;
 

@@ -33,6 +33,7 @@
         "eslint": "9.9.0",
         "eslint-config-airbnb-base": "15.0.0",
         "eslint-config-prettier": "9.1.0",
+        "eslint-import-resolver-typescript": "^3.6.1",
         "eslint-plugin-import": "^2.29.1",
         "eslint-plugin-lit": "1.14.0",
         "eslint-plugin-prettier": "5.2.1",
@@ -41,6 +42,9 @@
         "prebuildify": "6.0.1",
         "prettier": "3.3.3",
         "typescript": "5.5.4"
+    },
+    "peerDependencies": {
+        "electron": "^31.4.0"
     },
     "dependencies": {
         "node-addon-api": "^8.1.0",

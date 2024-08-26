@@ -137,6 +137,7 @@ NSData* ConvertBufferToNSData(Napi::Buffer<uint8_t> buffer) {
     NSLog(@"[authorizationController didCompleteWithAuthorization]: Success");
     
     if ([authorization.credential isKindOfClass:[ASAuthorizationPlatformPublicKeyCredentialRegistration class]]) {
+        NSLog(@"[authorizationController didCompleteWithAuthorization]: Creating credentials");
         ASAuthorizationPlatformPublicKeyCredentialRegistration *credential = (ASAuthorizationPlatformPublicKeyCredentialRegistration *)authorization.credential;
         
         NSData *clientDataJSON = credential.rawClientDataJSON;
@@ -144,22 +145,30 @@ NSData* ConvertBufferToNSData(Napi::Buffer<uint8_t> buffer) {
         NSString *credentialId = [credential.credentialID base64EncodedStringWithOptions:0];
         
         NSDictionary *responseDict = @{
-            @"clientDataJSON": [credential.rawClientDataJSON base64EncodedStringWithOptions:0],
-            @"attestationObject": [credential.rawAttestationObject base64EncodedStringWithOptions:0]
+            @"clientDataJSON": [clientDataJSON base64EncodedStringWithOptions:0],
+            @"attestationObject": [attestationObject base64EncodedStringWithOptions:0]
         };
         
         // Assemble the PublicKeyCredential object structure
         NSDictionary *publicKeyCredentialDict = @{
-            @"id": [credential.credentialID base64EncodedStringWithOptions:0], // id is the base64-encoded credential ID
+            @"id": credentialId, // id is the base64-encoded credential ID
             @"type": @"public-key", // Fixed value for PublicKeyCredential
-            @"rawId": [credential.credentialID base64EncodedStringWithOptions:0], // rawId is the raw NSData representing the credential ID
+            @"rawId": credentialId, // rawId is the raw NSData representing the credential ID
             @"response": responseDict, // The response object
             @"clientExtensionResults": @{}, // An empty dictionary, as no extensions are used in this example
             @"transports": @[] // Transports are not directly available in ASAuthorizationPlatformPublicKeyCredentialRegistration
         };
         
-        NSError *error;
+        if (![NSJSONSerialization isValidJSONObject:publicKeyCredentialDict]) {
+            if (self.completionHandler) {
+                self.completionHandler(nil, @"Invalid arguments to create");
+                return;
+            }
+        }
+
+        NSError *error = nil;
         NSData *responseData = [NSJSONSerialization dataWithJSONObject:publicKeyCredentialDict options:0 error:&error];
+
         if (error) {
             NSLog(@"[authorizationController didCompleteWithAuthorization]: Failed to serialize response: %@", error.localizedDescription);
             if (self.completionHandler) {
@@ -172,7 +181,10 @@ NSData* ConvertBufferToNSData(Napi::Buffer<uint8_t> buffer) {
             }
         }
     } else if ([authorization.credential isKindOfClass:[ASAuthorizationPlatformPublicKeyCredentialAssertion class]]) {
+        NSLog(@"[authorizationController didCompleteWithAuthorization]: Getting credentials");
         ASAuthorizationPlatformPublicKeyCredentialAssertion *credential = (ASAuthorizationPlatformPublicKeyCredentialAssertion *)authorization.credential;
+
+        NSString *credentialId = [credential.credentialID base64EncodedStringWithOptions:0];
 
         // Create the "response" dictionary, simulating the AuthenticatorAssertionResponse
         NSDictionary *responseDict = @{
@@ -184,16 +196,23 @@ NSData* ConvertBufferToNSData(Napi::Buffer<uint8_t> buffer) {
         
         // Assemble the PublicKeyCredential object structure
         NSDictionary *publicKeyCredentialDict = @{
-            @"id": [credential.credentialID base64EncodedStringWithOptions:0], // id is the base64-encoded credential ID
+            @"id": credentialId, // id is the base64-encoded credential ID
             @"type": @"public-key", // Fixed value for PublicKeyCredential
-            @"rawId": [credential.credentialID base64EncodedStringWithOptions:0], // rawId is the base64-encoded credential ID
+            @"rawId": credentialId, // rawId is the base64-encoded credential ID
             @"response": responseDict, // The response object
             @"clientExtensionResults": @{}, // An empty dictionary, as no extensions are used in this example
             @"transports": @[] // Transports are not directly available in ASAuthorizationPlatformPublicKeyCredentialAssertion
         };
 
+        if (![NSJSONSerialization isValidJSONObject:publicKeyCredentialDict]) {
+            if (self.completionHandler) {
+                self.completionHandler(nil, @"Invalid arguments to get");
+                return;
+            }
+        }
+
         // Serialize the PublicKeyCredential object into JSON
-        NSError *error;
+        NSError *error = nil;
         NSData *responseData = [NSJSONSerialization dataWithJSONObject:publicKeyCredentialDict options:0 error:&error];
         if (error) {
             NSLog(@"[authorizationController didCompleteWithAuthorization]: Failed to serialize response: %@", error.localizedDescription);
