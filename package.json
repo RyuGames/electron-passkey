@@ -18,6 +18,12 @@
         "dist/index.d.ts",
         "dist/index.js",
         "dist/index.js.map",
+        "dist/utils.d.ts",
+        "dist/utils.js",
+        "dist/utils.js.map",
+        "dist/types.d.ts",
+        "dist/types.js",
+        "dist/types.js.map",
         "binding.gyp",
         "src/lib",
         "prebuilds"
