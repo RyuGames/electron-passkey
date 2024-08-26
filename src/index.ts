@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import os from 'node:os';
+import type { IpcMain, IpcRenderer } from 'electron';
 import type {
   PasskeyInterface,
   PasskeyHandler,
@@ -7,7 +8,7 @@ import type {
   PublicKeyCredentialCreationOptions,
   PublicKeyCredentialRequestOptions,
 } from './types';
-import { arrayBufferToBase64, mapPublicKey } from './utils';
+import { arrayBufferToBase64, mapPublicKey, PassKeyMethods } from './utils';
 
 const lib: PasskeyInterface = require('node-gyp-build')(join(__dirname, '..'));
 
@@ -76,6 +77,33 @@ class Passkey {
     }
 
     return mapPublicKey(rawString, isCreate);
+  }
+
+  attachRenderer(window: Window, ipcRenderer: IpcRenderer): void {
+    window.navigator.credentials.create = async (options: any) => {
+      const rawString = await ipcRenderer.invoke(
+        PassKeyMethods.createPasskey,
+        options,
+      );
+      return this.mapCredential(rawString, true);
+    };
+
+    window.navigator.credentials.get = async (options: any) => {
+      const rawString = await ipcRenderer.invoke(
+        PassKeyMethods.getPasskey,
+        options,
+      );
+      return this.mapCredential(rawString, false);
+    };
+  }
+
+  attachMain(ipcMain: IpcMain): void {
+    ipcMain.handle(PassKeyMethods.createPasskey, (_event, options) =>
+      this.handlePasskeyCreate(options),
+    );
+    ipcMain.handle(PassKeyMethods.getPasskey, (_event, options) =>
+      this.handlePasskeyGet(options),
+    );
   }
 
   static getPackageName(): string {

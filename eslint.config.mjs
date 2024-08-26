@@ -43,6 +43,7 @@ export default [
     languageOptions: {
       globals: {
         navigator: 'readonly',
+        window: 'readonly',
       },
       ecmaVersion: 2020,
       sourceType: 'module',

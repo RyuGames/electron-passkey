@@ -1,12 +1,12 @@
 import { join } from 'path';
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import Passkey from '..';
-import './ipcHandlers';
 
 // https://github.com/electron/electron/issues/25153
 // app.disableHardwareAcceleration();
 
 Passkey.getInstance().init('google.com');
+Passkey.getInstance().attachMain(ipcMain);
 
 let window: BrowserWindow;
 

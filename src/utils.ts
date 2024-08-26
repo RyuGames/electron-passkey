@@ -106,3 +106,8 @@ export function mapPublicKey(
 
   return mapped;
 }
+
+export enum PassKeyMethods {
+  createPasskey = 'create-passkey',
+  getPasskey = 'get-passkey',
+}
