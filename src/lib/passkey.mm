@@ -125,7 +125,7 @@ typedef void (^PasskeyCompletionHandler)(NSString *resultMessage, NSString *erro
 
         NSLog(@"[PerformGetRequest]: Delegate and PresentationContextProvider set. Starting requests...");
 
-        [controller performRequests];
+        [controller performRequestsWithOptions:ASAuthorizationControllerRequestOptionPreferImmediatelyAvailableCredentials];
     } else {
         NSLog(@"[PerformGetRequest]: Your macOS version does not support WebAuthn APIs.");
         if (completionHandler) {
@@ -159,14 +159,14 @@ typedef void (^PasskeyCompletionHandler)(NSString *resultMessage, NSString *erro
             @"response": responseDict, // The response object
             @"clientExtensionResults": @{}, // An empty dictionary, as no extensions are used in this example
             @"transports": @[], // Transports are not directly available in ASAuthorizationPlatformPublicKeyCredentialRegistration
-            @"authenticatorAttachment": attachment == ASAuthorizationPublicKeyCredentialAttachmentPlatform ? @'platform' : @'cross-platform',
+            @"authenticatorAttachment": attachment == ASAuthorizationPublicKeyCredentialAttachmentPlatform ? @"platform" : @"cross-platform",
         };
         
         if (![NSJSONSerialization isValidJSONObject:publicKeyCredentialDict]) {
             if (self.completionHandler) {
                 self.completionHandler(nil, @"Invalid arguments to create");
-                return;
             }
+            return;
         }
 
         NSError *error = nil;
@@ -206,14 +206,14 @@ typedef void (^PasskeyCompletionHandler)(NSString *resultMessage, NSString *erro
             @"response": responseDict, // The response object
             @"clientExtensionResults": @{}, // An empty dictionary, as no extensions are used in this example
             @"transports": @[], // Transports are not directly available in ASAuthorizationPlatformPublicKeyCredentialAssertion
-            @"authenticatorAttachment": attachment == ASAuthorizationPublicKeyCredentialAttachmentPlatform ? @'platform' : @'cross-platform',
+            @"authenticatorAttachment": attachment == ASAuthorizationPublicKeyCredentialAttachmentPlatform ? @"platform" : @"cross-platform",
         };
 
         if (![NSJSONSerialization isValidJSONObject:publicKeyCredentialDict]) {
             if (self.completionHandler) {
                 self.completionHandler(nil, @"Invalid arguments to get");
-                return;
             }
+            return;
         }
 
         // Serialize the PublicKeyCredential object into JSON
@@ -255,10 +255,9 @@ typedef void (^PasskeyCompletionHandler)(NSString *resultMessage, NSString *erro
     if (mainWindow) {
         NSLog(@"[presentationAnchorForAuthorizationController]: Returning main window as presentation anchor.");
         return mainWindow;
-    } else {
-        NSLog(@"[presentationAnchorForAuthorizationController]: Error: No valid presentation anchor available.");
-        return nil;
     }
+    NSLog(@"[presentationAnchorForAuthorizationController]: Error: No valid presentation anchor available.");
+    return nil;
 }
 
 @end

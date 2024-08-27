@@ -1,3 +1,11 @@
+function btoa(arg: string): string {
+  return Buffer.from(arg, 'utf8').toString('base64');
+}
+
+function atob(arg: string): string {
+  return Buffer.from(arg, 'base64').toString('utf8');
+}
+
 export function arrayBufferToBase64(buffer: ArrayBuffer): string {
   let binary = '';
   const bytes = new Uint8Array(buffer);
@@ -41,10 +49,10 @@ export function mapPublicKey(
 
   if (isCreate) {
     mapped.response.clientDataJSON = base64ToArrayBuffer(
-      mapped.response.clientDataJSON,
+      response.clientDataJSON,
     );
     mapped.response.attestationObject = base64ToArrayBuffer(
-      mapped.response.attestationObject,
+      response.attestationObject,
     );
 
     mapped.response = {
@@ -82,27 +90,28 @@ export function mapPublicKey(
           raw.authenticatorAttachment as AuthenticatorAttachment,
         clientExtensionResults: raw.getClientExtensionResults(),
         response: {
-          attestationObject: toBase64url(response.attestationObject),
-          authenticatorData: toBase64url(response.getAuthenticatorData()),
-          clientDataJSON: toBase64url(response.clientDataJSON),
-          publicKey: toBase64url(response.getPublicKey()),
-          publicKeyAlgorithm: response.getPublicKeyAlgorithm(),
-          transports: response.getTransports() as AuthenticatorTransport[],
+          attestationObject: toBase64url(mapped.response.attestationObject),
+          authenticatorData: toBase64url(
+            mapped.response.getAuthenticatorData(),
+          ),
+          clientDataJSON: toBase64url(mapped.response.clientDataJSON),
+          publicKey: toBase64url(mapped.response.getPublicKey()),
+          publicKeyAlgorithm: mapped.response.getPublicKeyAlgorithm(),
+          transports:
+            mapped.response.getTransports() as AuthenticatorTransport[],
         },
       };
     };
   } else {
     mapped.response.clientDataJSON = base64ToArrayBuffer(
-      mapped.response.clientDataJSON,
+      response.clientDataJSON,
     );
     mapped.response.authenticatorData = base64ToArrayBuffer(
-      mapped.response.authenticatorData,
+      response.authenticatorData,
     );
-    mapped.response.signature = base64ToArrayBuffer(mapped.response.signature);
-    if (mapped.response.userHandle) {
-      mapped.response.userHandle = base64ToArrayBuffer(
-        mapped.response.userHandle,
-      );
+    mapped.response.signature = base64ToArrayBuffer(response.signature);
+    if (response.userHandle) {
+      mapped.response.userHandle = base64ToArrayBuffer(response.userHandle);
     }
 
     mapped.response.toJson = () => {
@@ -114,16 +123,18 @@ export function mapPublicKey(
         authenticatorAttachment:
           raw.authenticatorAttachment as AuthenticatorAttachment,
         response: {
-          authenticatorData: toBase64url(response.authenticatorData),
-          clientDataJSON: toBase64url(response.clientDataJSON),
-          signature: toBase64url(response.signature),
-          userHandle: response.userHandle
-            ? toBase64url(response.userHandle)
+          authenticatorData: toBase64url(mapped.response.authenticatorData),
+          clientDataJSON: toBase64url(mapped.response.clientDataJSON),
+          signature: toBase64url(mapped.esponse.signature),
+          userHandle: mapped.response.userHandle
+            ? toBase64url(mapped.response.userHandle)
             : undefined,
         },
       };
     };
   }
+
+  console.log(mapped);
 
   return mapped;
 }
