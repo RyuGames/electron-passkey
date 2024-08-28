@@ -1,30 +1,31 @@
-export function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i += 1) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-export function base64ToArrayBuffer(base64: string): ArrayBuffer {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i += 1) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
-
-function parseBuffer(buffer: ArrayBuffer): string {
+export function parseBuffer(buffer: ArrayBuffer): string {
   return String.fromCharCode(...new Uint8Array(buffer));
 }
 
-function toBase64url(buffer: ArrayBuffer): string {
-  const txt = btoa(parseBuffer(buffer));
-  return txt.replaceAll('+', '-').replaceAll('/', '_');
+export function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  return btoa(parseBuffer(buffer));
+}
+
+export function toBuffer(txt: string): ArrayBuffer {
+  return Uint8Array.from(txt, (c) => c.charCodeAt(0)).buffer;
+}
+
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const binaryString = atob(base64);
+  return toBuffer(binaryString);
+}
+
+function base64ToBase64Url(base64: string): string {
+  return base64.replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+}
+
+export function toBase64url(buffer: ArrayBuffer): string {
+  const base64 = arrayBufferToBase64(buffer);
+  return base64ToBase64Url(base64);
+}
+
+export function sha256(buffer: ArrayBuffer): Promise<ArrayBuffer> {
+  return crypto.subtle.digest('SHA-256', buffer);
 }
 
 export function mapPublicKey(
@@ -34,17 +35,19 @@ export function mapPublicKey(
   const raw = JSON.parse(rawString);
   const mapped = { ...raw };
 
-  mapped.rawId = base64ToArrayBuffer(raw.id);
+  mapped.id = base64ToBase64Url(raw.id);
+  mapped.rawId = base64ToArrayBuffer(raw.rawId);
+
   mapped.getClientExtensionResults = () => raw.clientExtensionResults;
 
   const { response } = raw;
 
   if (isCreate) {
     mapped.response.clientDataJSON = base64ToArrayBuffer(
-      mapped.response.clientDataJSON,
+      response.clientDataJSON,
     );
     mapped.response.attestationObject = base64ToArrayBuffer(
-      mapped.response.attestationObject,
+      response.attestationObject,
     );
 
     mapped.response = {
@@ -69,56 +72,57 @@ export function mapPublicKey(
       },
       getTransports(): string[] {
         // Return an empty array or fetch actual transports from rawJson if available
-        return raw.transports || [];
+        return mapped.transports || [];
       },
     };
 
     mapped.response.toJson = () => {
       return {
-        type: raw.type,
-        id: raw.id,
+        type: mapped.type,
+        id: mapped.id,
         rawId: mapped.rawId, // Same as ID, but useful in tests
         authenticatorAttachment:
-          raw.authenticatorAttachment as AuthenticatorAttachment,
-        clientExtensionResults: raw.getClientExtensionResults(),
+          mapped.authenticatorAttachment as AuthenticatorAttachment,
+        clientExtensionResults: mapped.getClientExtensionResults(),
         response: {
-          attestationObject: toBase64url(response.attestationObject),
-          authenticatorData: toBase64url(response.getAuthenticatorData()),
-          clientDataJSON: toBase64url(response.clientDataJSON),
-          publicKey: toBase64url(response.getPublicKey()),
-          publicKeyAlgorithm: response.getPublicKeyAlgorithm(),
-          transports: response.getTransports() as AuthenticatorTransport[],
+          attestationObject: toBase64url(mapped.response.attestationObject),
+          authenticatorData: toBase64url(
+            mapped.response.getAuthenticatorData(),
+          ),
+          clientDataJSON: toBase64url(mapped.response.clientDataJSON),
+          publicKey: toBase64url(mapped.response.getPublicKey()),
+          publicKeyAlgorithm: mapped.response.getPublicKeyAlgorithm(),
+          transports:
+            mapped.response.getTransports() as AuthenticatorTransport[],
         },
       };
     };
   } else {
     mapped.response.clientDataJSON = base64ToArrayBuffer(
-      mapped.response.clientDataJSON,
+      response.clientDataJSON,
     );
     mapped.response.authenticatorData = base64ToArrayBuffer(
-      mapped.response.authenticatorData,
+      response.authenticatorData,
     );
-    mapped.response.signature = base64ToArrayBuffer(mapped.response.signature);
-    if (mapped.response.userHandle) {
-      mapped.response.userHandle = base64ToArrayBuffer(
-        mapped.response.userHandle,
-      );
+    mapped.response.signature = base64ToArrayBuffer(response.signature);
+    if (response.userHandle) {
+      mapped.response.userHandle = base64ToArrayBuffer(response.userHandle);
     }
 
     mapped.response.toJson = () => {
       return {
-        clientExtensionResults: raw.getClientExtensionResults(),
-        id: raw.id,
+        clientExtensionResults: mapped.getClientExtensionResults(),
+        id: mapped.id,
         rawId: mapped.rawId,
-        type: raw.type,
+        type: mapped.type,
         authenticatorAttachment:
-          raw.authenticatorAttachment as AuthenticatorAttachment,
+          mapped.authenticatorAttachment as AuthenticatorAttachment,
         response: {
-          authenticatorData: toBase64url(response.authenticatorData),
-          clientDataJSON: toBase64url(response.clientDataJSON),
-          signature: toBase64url(response.signature),
-          userHandle: response.userHandle
-            ? toBase64url(response.userHandle)
+          authenticatorData: toBase64url(mapped.response.authenticatorData),
+          clientDataJSON: toBase64url(mapped.response.clientDataJSON),
+          signature: toBase64url(mapped.response.signature),
+          userHandle: mapped.response.userHandle
+            ? toBase64url(mapped.response.userHandle)
             : undefined,
         },
       };
