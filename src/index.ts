@@ -20,8 +20,6 @@ class Passkey {
 
   private platform = os.platform();
 
-  private domain: string = '';
-
   private constructor() {
     this.handler = new lib.PasskeyHandler(); // Create an instance of PasskeyHandler
   }
@@ -43,8 +41,6 @@ class Passkey {
     options.publicKey.challenge = arrayBufferToBase64(
       options.publicKey.challenge as ArrayBuffer,
     );
-    (options.publicKey as PublicKeyCredentialCreationOptions).rp.id =
-      this.domain;
     (options.publicKey as PublicKeyCredentialCreationOptions).user.id =
       arrayBufferToBase64(
         (options.publicKey as PublicKeyCredentialCreationOptions).user
@@ -60,7 +56,6 @@ class Passkey {
         `electron-passkey is meant for macOS only and should NOT be run on ${this.platform}`,
       );
     }
-    (options.publicKey as PublicKeyCredentialRequestOptions).rpId = this.domain;
 
     options.publicKey.challenge = arrayBufferToBase64(
       options.publicKey.challenge as ArrayBuffer,
@@ -99,9 +94,7 @@ class Passkey {
     return mapPublicKey(rawString, false);
   }
 
-  attachHandlersToMain(domain: string, ipcMain: IpcMain): void {
-    this.domain = domain;
-
+  attachHandlersToMain(ipcMain: IpcMain): void {
     ipcMain.handle(PassKeyMethods.createPasskey, (_event, options) =>
       this.handlePasskeyCreate(options),
     );

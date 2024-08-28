@@ -205,7 +205,7 @@ typedef void (^PasskeyCompletionHandler)(NSString *resultMessage, NSString *erro
             @"rawId": credentialId, // rawId is the base64-encoded credential ID
             @"response": responseDict, // The response object
             @"clientExtensionResults": @{}, // An empty dictionary, as no extensions are used in this example
-            @"transports": @[], // Transports are not directly available in ASAuthorizationPlatformPublicKeyCredentialAssertion
+            @"transports": @[@"hybrid"], // Transports are not directly available in ASAuthorizationPlatformPublicKeyCredentialAssertion
             @"authenticatorAttachment": attachment == ASAuthorizationPublicKeyCredentialAttachmentPlatform ? @"platform" : @"cross-platform",
         };
 

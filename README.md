@@ -21,7 +21,7 @@ navigator.credentials.get = (options) =>
 import { ipcMain } from 'electron';
 import Passkey from 'electron-passkey';
 
-Passkey.getInstance().attachHandlersToMain('domain.com', ipcMain);
+Passkey.getInstance().attachHandlersToMain(ipcMain);
 ```
 
 ### Entitlements Setup
@@ -45,8 +45,7 @@ Passkey.getInstance().attachHandlersToMain('domain.com', ipcMain);
 </array>
 ```
 7) Check to see if your AASA is being cached by the Apple CDN at `https://app-site-association.cdn-apple.com/a/v1/DOMAIN`
-8) Make sure to pass in your domain to `attachHandlersToMain()`
-9) Build your electron application and sign it
+8) Build your electron application and sign it
 
 ### Deployments
 
